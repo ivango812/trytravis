@@ -33,11 +33,11 @@ else:
 
 
 __title__ = 'trytravis'
-__author__ = 'Seth Michael Larson'
-__email__ = 'sethmichaellarson@protonmail.com'
+__author__ = 'Ivan Gorban'
+__email__ = 'ivan@igorban.ru'
 __license__ = 'Apache-2.0'
-__url__ = 'https://github.com/SethMichaelLarson/trytravis'
-__version__ = '1.0.4'
+__url__ = 'https://github.com/ivango812/trytravis'
+__version__ = '1.0.5'
 
 __all__ = ['main']
 
@@ -108,7 +108,7 @@ _USAGE = ('usage: trytravis [command]?\n'
           'your building repository.\n'
           '\n'
           'If you\'re still having troubles feel free to open an '
-          'issue at our\nissue tracker: https://github.com/SethMichaelLarson'
+          'issue at our\nissue tracker: https://github.com/ivango812'
           '/trytravis/issues')
 
 _HTTPS_REGEX = re.compile(r'^https://(?:www\.)?github\.com/([^/]+)/([^/.]+)(?:\.git)?$')
