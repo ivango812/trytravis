@@ -34,7 +34,7 @@ Python 2.7 or Python 3.4 or later to be installed to run.
 
 ### Install the latest `trytravis` via [`pip`](https://pip.pypa.io/en/stable/):
 ```
-bash-4.4$ pip install trytravis
+bash-4.4$ pip install -e git+https://github.com/ivango812/trytravis.git#egg=trytravis
 bash-4.4$ trytravis --version
 trytravis 1.0.0 (ubuntu 16.04.3 python 3.6.2)
 ```
@@ -132,7 +132,7 @@ Travis build URL: `https://travis-ci.org/SethMichaelLarson/throwaway/builds/2685
 If you haven't upgraded lately I recommend running the following
 command to upgrade to the latest version of the tool:
 
-`pip install -U trytravis`
+`pip install -U -e git+https://github.com/ivango812/trytravis.git#egg=trytravis`
 
 ### Additional Recommended Steps
 
