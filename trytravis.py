@@ -33,11 +33,11 @@ else:
 
 
 __title__ = 'trytravis'
-__author__ = 'Ivan Gorban'
-__email__ = 'ivan@igorban.ru'
+__author__ = 'Seth Michael Larson'
+__email__ = 'sethmichaellarson@protonmail.com'
 __license__ = 'Apache-2.0'
-__url__ = 'https://github.com/ivango812/trytravis'
-__version__ = '1.0.5'
+__url__ = 'https://github.com/SethMichaelLarson/trytravis'
+__version__ = '1.0.4'
 
 __all__ = ['main']
 
@@ -265,33 +265,30 @@ def _watch_travis_build(build_id):
     try:
         build_size = None  # type: int
         running = True
+        spin_i = 0
         while running:
-            with requests.get('%sbuild/%d' % (TRAVIS_API_URL, build_id),
+            with requests.get('%sbuild/%d/jobs' % (TRAVIS_API_URL, build_id),
                               headers=_travis_headers()) as r:
                 r_json = r.json()
 
-                if build_size is not None:
-                    if build_size > 1:
-                        sys.stdout.write('\r\x1b[%dA' % build_size)
-                    else:
-                        sys.stdout.write('\r')
+                if build_size is not None and build_size > 0:
+                    sys.stdout.write('\r\x1b[%dA' % build_size)
 
                 build_size = len(r_json['jobs'])
                 running = False
                 current_number = 1
-                job = r_json
-                color, state, is_running = _travis_job_state(job['state'])
-                if is_running:
-                    running = True
+                # job = r_json
+                for job in r_json['jobs']:
+                    color, state, is_running = _travis_job_state(job['state'])
+                    if is_running:
+                        running = True
 
-                padding = ' ' * (len(str(build_size)) -
-                                    len(str(current_number)))
-                number = str(current_number) + padding
-                # current_number += 1
-                job_display = '#' + ' '.join(['Job', number,
-                                                state, job['state']])
+                    number = '%3s' % current_number
+                    state_name = '%10s' % job['state']
+                    current_number += 1
+                    job_display = '# ' + ' '.join(['Job', number, state, state_name])
 
-                print(color + job_display + colorama.Style.RESET_ALL)
+                    print(color + job_display + colorama.Style.RESET_ALL)
 
             time.sleep(3.0)
     except KeyboardInterrupt:

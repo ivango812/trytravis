@@ -72,6 +72,12 @@ in order to use SSH authentication.
 
 If you can't use SSH authentication you can [potentially use credential caching](https://stackoverflow.com/a/28562679/5763213).
 
+### Setup Authentication for the Travis CI
+
+`trytravis` gets travis token from installed `travis cli`, as Travis API v.3 needs authorization by tokenю
+So, we need `travis` installed on your host https://github.com/travis-ci/travis.rb#installation 
+And logged in - `travis login --com`
+
 ### [Register the repository with Travis CI](https://docs.travis-ci.com/user/getting-started/)
 
 Login to Travis, go to Accounts and turn the building on for the Repository. You
