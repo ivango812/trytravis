@@ -24,17 +24,25 @@ import os
 import re
 import colorama
 import git
-from git.objects.util import utc
+import json
+import yaml
+if sys.version_info.major >= 3:
+    from urllib.parse import quote as urlquote
+else:
+    from urllib import quote as urlquote
 
 
 __title__ = 'trytravis'
-__author__ = 'Seth Michael Larson'
-__email__ = 'sethmichaellarson@protonmail.com'
+__author__ = 'Ivan Gorban'
+__email__ = 'ivan@igorban.ru'
 __license__ = 'Apache-2.0'
-__url__ = 'https://github.com/SethMichaelLarson/trytravis'
-__version__ = '1.0.4'
+__url__ = 'https://github.com/ivango812/trytravis'
+__version__ = '1.0.5'
 
 __all__ = ['main']
+
+TRAVIS_API_URL = 'https://api.travis-ci.com/'
+TRAVIS_API_VERSION = 3
 
 # Try to find the home directory for different platforms.
 _home_dir = os.path.expanduser('~')
@@ -55,7 +63,33 @@ if platform.system() == 'Windows':
     config_dir = os.path.join(_home_dir, 'trytravis')
 else:
     config_dir = os.path.join(_home_dir, '.config', 'trytravis')
+
+# Find Travis token
+if platform.system() == 'Windows':
+    travis_config_dir = os.path.join(_home_dir, 'travis')
+else:
+    travis_config_dir = os.path.join(_home_dir, '.travis')
+
+travis_config_file = os.path.join(travis_config_dir, 'config.yml')
+try:
+    with open(travis_config_file, 'r') as stream:
+        try:
+            travis_config = yaml.safe_load(stream)
+            TRAVIS_TOKEN = travis_config['endpoints'][TRAVIS_API_URL]['access_token']
+            # print(TRAVIS_TOKEN)
+        except yaml.YAMLError as exc:
+            print('Error parsing travis config %s' % travis_config_file)
+            print(exc)
+            sys.exit(1)
+except FileNotFoundError as e:
+    print('Travis config file not found at %s' % travis_config_file)
+    print('It seems you don\t have travis installed.')
+    print('Install travis: sudo gem install travis')
+    print('Login travis: travis login --com')
+    sys.exit(1)
+
 del _home_dir
+
 
 try:
     user_input = raw_input
@@ -72,15 +106,15 @@ _USAGE = ('usage: trytravis [command]?\n'
           'submitting an issue.\n'
           '  --repo, -r [repo]?    Tells the program you wish to setup '
           'your building repository.\n'
-          '  --no-wait, -nw            Don\'t wait for the builds to end.\n'
-
           '\n'
           'If you\'re still having troubles feel free to open an '
           'issue at our\nissue tracker: https://github.com/SethMichaelLarson'
           '/trytravis/issues')
 
-_HTTPS_REGEX = re.compile(r'^https://(?:www\.)?github\.com/([^/]+)/([^/]+)$')
-_SSH_REGEX = re.compile(r'^ssh://git@github\.com/([^/]+)/([^/]+)$')
+_HTTPS_REGEX = re.compile(r'^https://(?:www\.)?github\.com/([^/]+)/([^/.]+)(?:\.git)?$')
+_SSH_REGEX = re.compile(r'^(?:ssh://)?git@github\.com[/:]([^/]+)/([^/.]+)(?:\.git)?$')
+_UTC_OFFSET = round((datetime.datetime.now() -
+                     datetime.datetime.utcnow()).total_seconds())
 
 
 def _input_github_repo(url=None):
@@ -151,7 +185,7 @@ def _submit_changes_to_github_repo(path, url):
     try:
         try:
             repo.delete_remote('trytravis')
-        except Exception:
+        except:
             pass
         print('Adding a temporary remote to '
               '`%s`...' % url)
@@ -171,6 +205,8 @@ def _submit_changes_to_github_repo(path, url):
                 raise
         commit = repo.head.commit.hexsha
         committed_at = repo.head.commit.committed_datetime
+        committed_at += datetime.timedelta(seconds=_UTC_OFFSET)
+        committed_at = committed_at.strftime('%Y-%m-%d %H:%M:%S')
 
         print('Pushing to `trytravis` remote...')
         remote.push(force=True)
@@ -180,7 +216,7 @@ def _submit_changes_to_github_repo(path, url):
             repo.git.reset('HEAD^')
         try:
             repo.delete_remote('trytravis')
-        except Exception:
+        except:
             pass
     return commit, committed_at
 
@@ -195,34 +231,22 @@ def _wait_for_travis_build(url, commit, committed_at):
     start_time = time.time()
     build_id = None
 
-    while time.time() - start_time < 60:
-        with requests.get('https://api.travis-ci.org/repos/%s/builds' % slug,
+    while time.time() - start_time < 60*10:
+        with requests.get('%srepo/%s/builds?sort_by=created_at:desc' % (TRAVIS_API_URL, urlquote(slug, safe='')),
                           headers=_travis_headers()) as r:
             if not r.ok:
                 raise RuntimeError('Could not reach the Travis API '
                                    'endpoint. Additional information: '
                                    '%s' % str(r.content))
 
+            r_json = r.json()
             # Search through all commits and builds to find our build.
-            commit_to_sha = {}
-            json = r.json()
-            for travis_commit in sorted(json['commits'],
-                                        key=lambda x: x['committed_at']):
-                travis_committed_at = datetime.datetime.strptime(
-                    travis_commit['committed_at'], '%Y-%m-%dT%H:%M:%SZ'
-                ).replace(tzinfo=utc)
-                if travis_committed_at < committed_at:
-                    continue
-                commit_to_sha[travis_commit['id']] = travis_commit['sha']
 
-            for build in json['builds']:
-                if (build['commit_id'] in commit_to_sha and
-                        commit_to_sha[build['commit_id']] == commit):
-
-                    build_id = build['id']
-                    print('Travis build id: `%d`' % build_id)
-                    print('Travis build URL: `https://travis-ci.org/'
-                          '%s/builds/%d`' % (slug, build_id))
+            for build in r_json['builds']:
+                if build["commit"]["sha"] == commit:
+                    build_id = build["id"]
+                    print('Travis build id: %d' % build_id)
+                    print('Travis build URL: %s%s/builds/%d' % (TRAVIS_API_URL, slug, build_id))
 
             if build_id is not None:
                 break
@@ -242,9 +266,9 @@ def _watch_travis_build(build_id):
         build_size = None  # type: int
         running = True
         while running:
-            with requests.get('https://api.travis-ci.org/builds/%d' % build_id,
+            with requests.get('%sbuild/%d' % (TRAVIS_API_URL, build_id),
                               headers=_travis_headers()) as r:
-                json = r.json()
+                r_json = r.json()
 
                 if build_size is not None:
                     if build_size > 1:
@@ -252,34 +276,22 @@ def _watch_travis_build(build_id):
                     else:
                         sys.stdout.write('\r')
 
-                build_size = len(json['jobs'])
+                build_size = len(r_json['jobs'])
                 running = False
                 current_number = 1
-                for job in json['jobs']:  # pragma: no coverage
-                    color, state, is_running = _travis_job_state(job['state'])
-                    if is_running:
-                        running = True
+                job = r_json
+                color, state, is_running = _travis_job_state(job['state'])
+                if is_running:
+                    running = True
 
-                    platform = job['config']['os']
-                    if platform == 'osx':
-                        platform = ' osx '
+                padding = ' ' * (len(str(build_size)) -
+                                    len(str(current_number)))
+                number = str(current_number) + padding
+                # current_number += 1
+                job_display = '#' + ' '.join(['Job', number,
+                                                state, job['state']])
 
-                    env = job['config'].get('env', '')
-                    sudo = 's' if job['config'].get('sudo', True) else 'c'
-                    lang = job['config'].get('language', 'generic')
-
-                    padding = ' ' * (len(str(build_size)) -
-                                     len(str(current_number)))
-                    number = str(current_number) + padding
-                    current_number += 1
-                    job_display = '#' + ' '.join([number,
-                                                  state,
-                                                  platform,
-                                                  sudo,
-                                                  lang,
-                                                  env])
-
-                    print(color + job_display + colorama.Style.RESET_ALL)
+                print(color + job_display + colorama.Style.RESET_ALL)
 
             time.sleep(3.0)
     except KeyboardInterrupt:
@@ -335,9 +347,8 @@ def _version_string():
 
 def _travis_headers():
     """ Returns the headers that the Travis API expects from clients. """
-    return {'User-Agent': ('trytravis/%s (https://github.com/'
-                           'SethMichaelLarson/trytravis)') % __version__,
-            'Accept': 'application/vnd.travis-ci.2+json'}
+    return {'Travis-API-Version': str(TRAVIS_API_VERSION),
+            'Authorization': 'token %s' % TRAVIS_TOKEN}
 
 
 def _main(argv):
@@ -368,13 +379,6 @@ def _main(argv):
             else:
                 url = None
             _input_github_repo(url)
-
-        # No wait
-        elif arg in ['--no-wait', '-nw']:
-            url = _load_github_repo()
-            commit, committed = _submit_changes_to_github_repo(os.getcwd(),
-                                                               url)
-            build_id = _wait_for_travis_build(url, commit, committed)
 
         # Help string
         else:

@@ -1,9 +1,6 @@
 # trytravis
 
-[![Travis](https://img.shields.io/travis/SethMichaelLarson/trytravis/master.svg?style=flat)](https://travis-ci.org/SethMichaelLarson/trytravis)
-[![AppVeyor](https://img.shields.io/appveyor/ci/SethMichaelLarson/trytravis/master.svg?style=flat)](https://ci.appveyor.com/project/SethMichaelLarson/trytravis)
-[![Codecov](https://img.shields.io/codecov/c/github/SethMichaelLarson/trytravis/master.svg?style=flat)](https://codecov.io/gh/SethMichaelLarson/trytravis)
-[![BountySource](https://img.shields.io/badge/donate-bountysource-brightgreen.svg?style=flat)](https://salt.bountysource.com/teams/trytravis)
+Now it supports Travis API v.3
 
 Send local git changes to Travis CI without commits or pushes.
 
@@ -83,8 +80,13 @@ may need to use `Sync Account` if you don't see the repository in the available 
 ### Tell `trytravis` which GitHub repository to use
 
 Run `trytravis --repo` and enter in the URL to the repository that you just created.
-You can use `ssh://git@github.com/[USERNAME]/[PROJECT]` or
-`https://github.com/[USERNAME]/[PROJECT]` as the URL for the repository.
+You can use:
+- `ssh://git@github.com/[USERNAME]/[PROJECT]`
+- `https://github.com/[USERNAME]/[PROJECT]`
+- `git@github.com:[USERNAME]/[PROJECT].git`
+- `https://github.com/[USERNAME]/[PROJECT].git`
+
+as the URL for the repository.
 
 ### Ready to Use the Tool
 
@@ -204,5 +206,5 @@ limitations under the License.
 
 ## Author
 
-Follow me on Twitter [`@pythoasis`](https://twitter.com/pythoasis)
+Follow me on Twitter [`@ivangorban`](https://twitter.com/ivangorban)
 for updates on `trytravis` and other projects that I'm working on.

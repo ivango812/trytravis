@@ -12,6 +12,18 @@ All notable changes to trytravis will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 1.0.5
+
+### Added
+
+- Support of github repository url format:
+  https://github.com/ivango812/trytravis.git
+  git@github.com:ivango812/trytravis.git
+
+### Changed
+
+- Support Travis API v.3 (instead of Travis API v.2 - it's deprecated)
+
 ## Unreleased
 
 ### Added
