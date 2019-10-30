@@ -13,6 +13,7 @@ with open(os.path.join(base_dir, 'trytravis.py')) as f:
 
 # Gather all install_requires values.
 install_requires = ['requests>=2.14.0',
+                    'pyyaml',
                     'colorama>=0.3.9',
                     'GitPython>=2.1.5']
 
